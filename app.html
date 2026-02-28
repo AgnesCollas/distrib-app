@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Distribution CIDEX - Bernin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh; 
+      overflow: hidden;
+      background: #f5f7fa;
+    }
+    #map { width: calc(100% - 280px); height: 100vh; }
+    
+    /* Stats panel fixe à droite */
+    .stats-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 280px;
+      height: 100vh;
+      background: linear-gradient(180deg, #ffffff 0%, #f8f9fb 100%);
+      box-shadow: -2px 0 20px rgba(0,0,0,0.08);
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+    }
+    .stats-header {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      padding: 25px 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(74, 144, 226, 0.3);
+    }
+    .stats-header h2 {
+      font-size: 20px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .mode-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+    .stats-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .stat-item {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e8ecf1;
+      transition: transform 0.2s;
+    }
+    .stat-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7c93;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+    .stat-item.done .stat-value { color: #27ae60; }
+    .stat-item.remaining .stat-value { color: #4a90e2; }
+    .progress-container {
+      margin: 20px 0;
+      padding: 18px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e8ecf1;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #e8ecf1;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a90e2, #357abd);
+      transition: width 0.3s;
+      box-shadow: 0 0 10px rgba(74, 144, 226, 0.4);
+    }
+    .progress-text {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #4a90e2;
+      margin-top: 10px;
+    }
+    
+    /* Section utilisateurs actifs */
+    .users-section {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e8ecf1;
+      display: none;
+    }
+    .users-section.active { display: block; }
+    .users-section h4 {
+      font-size: 12px;
+      color: #6b7c93;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    #activeUsers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .user-badge {
+      background: #e8f4fd;
+      color: #4a90e2;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    /* Menu burger */
+    .menu-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 300px;
+      z-index: 1000;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3);
+      font-size: 24px;
+      transition: all 0.3s;
+      color: #4a90e2;
+    }
+    .menu-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+      background: #4a90e2;
+      color: white;
+    }
+    .menu-panel {
+      position: fixed;
+      bottom: -300px;
+      left: 0;
+      right: 280px;
+      height: auto;
+      background: #3a3a3a;
+      box-shadow: 0 -2px 20px rgba(0,0,0,0.3);
+      z-index: 999;
+      transition: bottom 0.3s ease;
+      padding: 20px;
+    }
+    .menu-panel.open { bottom: 0; }
+    .menu-content { 
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .menu-content button {
+      width: auto;
+      min-width: 200px;
+      padding: 14px 20px;
+      margin: 0;
+    }
+    button {
+      padding: 14px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-anthracite {
+      background: #3a3a3a;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .btn-anthracite:hover {
+      background: #2a2a2a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .btn-primary { 
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    .btn-primary:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+    }
+    .btn-secondary { 
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+    }
+    .btn-secondary:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+    }
+    .btn-warning { 
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+    .btn-warning:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+    }
+    .btn-danger { 
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    .btn-danger:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    }
+    .edit-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 280px;
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      z-index: 998;
+      font-weight: 600;
+      display: none;
+      box-shadow: 0 2px 10px rgba(243, 156, 18, 0.3);
+    }
+    .edit-banner.active { display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .edit-banner-text {
+      flex: 1;
+      text-align: center;
+    }
+    .edit-banner button {
+      padding: 8px 16px;
+      font-size: 14px;
+      margin: 0;
+    }
+    .info-box {
+      background: #e8f4fd;
+      border-left: 4px solid #4a90e2;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #2c3e50;
+    }
+    
+    /* Modal générique */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(44, 62, 80, 0.8);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .modal-content h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+      font-size: 22px;
+    }
+    .modal-content p {
+      margin-bottom: 20px;
+      color: #6b7c93;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .modal-content input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 2px solid #e8ecf1;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .modal-content input:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-buttons button {
+      flex: 1;
+    }
+    
+    /* Modal de choix de mode */
+
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      #map { width: 100%; height: calc(100vh - 200px); }
+      .stats-panel {
+        width: 100%;
+        height: 200px;
+        bottom: 0;
+        top: auto;
+        box-shadow: 0 -2px 20px rgba(0,0,0,0.08);
+        flex-direction: row;
+      }
+      .stats-header {
+        width: 120px;
+        padding: 15px 10px;
+      }
+      .stats-header h2 { font-size: 14px; }
+      .stats-content {
+        flex: 1;
+        display: flex;
+        gap: 10px;
+        padding: 15px;
+      }
+      .stat-item {
+        flex: 1;
+        padding: 10px;
+        margin: 0;
+      }
+      .stat-value { font-size: 24px; }
+      .progress-container { display: none; }
+      .users-section { display: none !important; }
+      .menu-btn {
+        bottom: 220px;
+        right: 20px;
+      }
+      .menu-panel { right: 0; }
+      .menu-panel.open { bottom: 0; }
+      .edit-banner { right: 0; }
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <!-- Modal de session -->
+  <div class="modal" id="sessionModal">
+    <div class="modal-content">
+      <h2>🗺️ Connexion à la session</h2>
+      <p>Entrez un code de session partagé et votre prénom pour synchroniser avec votre équipe.</p>
+      <input type="text" id="sessionCodeInput" placeholder="Code de session (ex: bernin2024)" />
+      <input type="text" id="userNameInput" placeholder="Votre prénom" />
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="startSession()">Démarrer</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal pour ajouter un CIDEX -->
+  <div class="modal" id="addCidexModal">
+    <div class="modal-content">
+      <h2>➕ Ajouter un CIDEX</h2>
+      <input type="text" id="cidexName" placeholder="Nom du CIDEX (ex: Chemin des Roses)" />
+      <input type="text" id="cidexAddress" placeholder="Adresse complète" />
+      <div class="info-box">
+        💡 Après avoir ajouté le CIDEX, cliquez sur la carte pour le positionner
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="closeAddModal()">Annuler</button>
+        <button class="btn-primary" onclick="addNewCidex()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="edit-banner" id="editBanner">
+    <div class="edit-banner-text" id="editBannerText">📍 MODE ÉDITION - Cliquez sur un marqueur puis sur la carte pour le déplacer</div>
+    <button class="btn-secondary" onclick="cancelEdit()">Annuler</button>
+    <button class="btn-primary" id="saveBannerBtn" onclick="savePositions()">💾 Sauvegarder</button>
+  </div>
+  
+  <!-- Stats panel fixe à droite -->
+  <div class="stats-panel">
+    <div class="stats-header">
+      <h2>🗺️ CIDEX Bernin</h2>
+      <div class="mode-badge" id="modeBadge">Chargement...</div>
+    </div>
+    <div class="stats-content">
+      <div class="users-section" id="usersSection">
+        <h4>👥 Membres actifs</h4>
+        <div id="activeUsers"></div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-label">Total CIDEX</div>
+        <div class="stat-value" id="totalCidex">0</div>
+      </div>
+      
+      <div class="stat-item done">
+        <div class="stat-label">✅ Distribués</div>
+        <div class="stat-value" id="doneCount">0</div>
+      </div>
+      
+      <div class="stat-item remaining">
+        <div class="stat-label">⏳ Restants</div>
+        <div class="stat-value" id="remainingCount">0</div>
+      </div>
+      
+      <div class="progress-container">
+        <div class="stat-label">Progression</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressPercent">0%</div>
+      </div>
+    </div>
+  </div>
+  
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  
+  <div class="menu-panel" id="menuPanel">
+    <div class="menu-content">
+      <button class="btn-anthracite" onclick="startAddCidex()">➕ Ajouter un CIDEX</button>
+      <button class="btn-anthracite" onclick="startEditMode()">📍 Déplacer un CIDEX</button>
+      <button class="btn-anthracite" onclick="startDeleteMode()">🗑️ Supprimer un CIDEX</button>
+      <button class="btn-anthracite" onclick="resetAll()">🔄 Tout réinitialiser</button>
+    </div>
+  </div>
+  
+  <div id="map"></div>
+  
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Variables globales
+    let editMode = false, selectedMarker = null, cidexList = [], markers = {};
+    let addingNewCidex = false, newCidexData = null;
+    let deletingCidex = false;
+    let isMultiMode = false, sessionCode = null, userName = null;
+    let database = null, sessionRef = null;
+    let originalPositions = {}; // Pour sauvegarder les positions avant édition
+    let firebaseStates = {}; // Pour stocker les états depuis Firebase
+    
+    // Configuration Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCUxqwZQ7RmO7z5ymd_ikqatGcPFA-XuZo",
+      authDomain: "distriapp-12bd3.firebaseapp.com",
+      databaseURL: "https://distriapp-12bd3-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "distriapp-12bd3",
+      storageBucket: "distriapp-12bd3.firebasestorage.app",
+      messagingSenderId: "966913095978",
+      appId: "1:966913095978:web:499460380702962e960653"
+    };
+    
+    // Initialiser Firebase
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    
+    // Initialiser la carte
+    const map = L.map('map').setView([45.2714, 5.8652], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 19
+    }).addTo(map);
+    
+    // Icônes
+    const blueIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const greenIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const orangeIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    
+    // Afficher le modal de session au chargement
+    window.addEventListener('load', function() {
+      // Démarrer directement en mode Multi
+      isMultiMode = true;
+      document.getElementById('sessionModal').classList.add('active');
+    });
+    
+    // Annuler la session (non utilisé mais gardé pour compatibilité)
+    function cancelSession() {
+      alert('⚠️ Vous devez entrer un code de session et un prénom pour utiliser l\'application.');
+    }
+    
+    // Démarrer la session
+    function startSession() {
+      const code = document.getElementById('sessionCodeInput').value.trim();
+      const name = document.getElementById('userNameInput').value.trim();
+      
+      if (!code || !name) {
+        alert('⚠️ Veuillez remplir tous les champs');
+        return;
+      }
+      
+      sessionCode = code;
+      userName = name;
+      
+      document.getElementById('sessionModal').classList.remove('active');
+      document.getElementById('modeBadge').textContent = '👥 ' + code;
+      document.getElementById('usersSection').classList.add('active');
+      
+      initApp();
+      initFirebase();
+    }
+    
+    // Initialiser Firebase
+    function initFirebase() {
+      sessionRef = database.ref('sessions/' + sessionCode);
+      
+      // Créer la session si elle n'existe pas
+      sessionRef.once('value').then(function(snapshot) {
+        if (!snapshot.exists()) {
+          // Initialiser avec la liste par défaut
+          sessionRef.set({
+            etats: {},
+            users: {},
+            cidexList: getDefaultCidexList(),
+            createdAt: Date.now()
+          });
+        } else {
+          const data = snapshot.val() || {};
+          
+          // Charger la liste des CIDEX depuis Firebase
+          if (data.cidexList && data.cidexList.length > 0) {
+            cidexList = data.cidexList;
+            // Réinitialiser les marqueurs avec la nouvelle liste
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+            initMarkers();
+          }
+          
+          // Charger les états existants
+          if (data.etats) {
+            Object.keys(data.etats).forEach(function(cidexId) {
+              if (markers[cidexId]) {
+                markers[cidexId].etat = data.etats[cidexId];
+                const icon = data.etats[cidexId] === 'fait' ? greenIcon : blueIcon;
+                markers[cidexId].setIcon(icon);
+              }
+            });
+            updateStats();
+          }
+        }
+      });
+      
+      // Gérer la présence utilisateur
+      const userKey = userName.replace(/[.#$\[\]]/g, '_');
+      const userRef = sessionRef.child('users/' + userKey);
+      userRef.set({
+        name: userName,
+        online: true,
+        lastSeen: Date.now()
+      });
+      
+      userRef.onDisconnect().update({
+        online: false,
+        lastSeen: Date.now()
+      });
+      
+      // Heartbeat toutes les 30 secondes
+      setInterval(function() {
+        userRef.update({ lastSeen: Date.now() });
+      }, 30000);
+      
+      // Écouter les changements de la liste des CIDEX
+      let isUpdatingCidex = false;
+      sessionRef.child('cidexList').on('value', function(snapshot) {
+        if (isUpdatingCidex) return; // Éviter les mises à jour en boucle
+        if (editMode || addingNewCidex || deletingCidex) return; // Ne pas mettre à jour pendant l'édition
+        
+        const newCidexList = snapshot.val();
+        if (newCidexList && newCidexList.length > 0) {
+          isUpdatingCidex = true;
+          cidexList = newCidexList;
+          
+          // Supprimer tous les anciens marqueurs
+          Object.values(markers).forEach(m => {
+            map.removeLayer(m);
+          });
+          markers = {};
+          
+          // Recréer les marqueurs avec la nouvelle liste
+          initMarkers();
+          
+          setTimeout(() => { isUpdatingCidex = false; }, 100);
+        }
+      });
+      
+      // Écouter les changements d'états
+      sessionRef.child('etats').on('value', function(snapshot) {
+        const etats = snapshot.val() || {};
+        firebaseStates = etats; // Sauvegarder globalement
+        
+        Object.keys(markers).forEach(function(cidexId) {
+          const marker = markers[cidexId];
+          const etat = etats[cidexId] || 'a_faire';
+          marker.etat = etat;
+          const icon = etat === 'fait' ? greenIcon : blueIcon;
+          marker.setIcon(icon);
+          const etatText = etat === 'fait' ? '✅ Distribué' : '⏳ À faire';
+          marker.setPopupContent('<b>' + marker.cidexData.name + '</b><br/>' + etatText + '<br/><small>Cliquez pour changer</small>');
+        });
+        updateStats();
+      });
+      
+      // Écouter les utilisateurs actifs
+      sessionRef.child('users').on('value', function(snapshot) {
+        const users = snapshot.val() || {};
+        const container = document.getElementById('activeUsers');
+        container.innerHTML = '';
+        const now = Date.now();
+        Object.values(users).forEach(function(user) {
+          if (user.online || (now - user.lastSeen < 300000)) {
+            const badge = document.createElement('span');
+            badge.className = 'user-badge';
+            badge.textContent = user.name + (user.name === userName ? ' (vous)' : '');
+            container.appendChild(badge);
+          }
+        });
+      });
+    }
+    
+    // Fonctions de sauvegarde
+    function loadEtats() {
+      if (isMultiMode) {
+        return {}; // Les états sont gérés par Firebase
+      }
+      try { return JSON.parse(localStorage.getItem('cidexEtats') || '{}'); }
+      catch(e) { return {}; }
+    }
+    
+    function saveEtats(etats) {
+      if (isMultiMode && sessionRef) {
+        Object.keys(etats).forEach(function(cidexId) {
+          sessionRef.child('etats/' + cidexId).set(etats[cidexId]);
+        });
+      } else {
+        localStorage.setItem('cidexEtats', JSON.stringify(etats));
+      }
+    }
+    
+    function loadPositions() {
+      try { return JSON.parse(localStorage.getItem('cidexPositions') || '{}'); }
+      catch(e) { return {}; }
+    }
+    
+    function savePositionsToStorage(positions) {
+      localStorage.setItem('cidexPositions', JSON.stringify(positions));
+    }
+    
+    function loadCidexList() {
+      try {
+        const saved = localStorage.getItem('cidexList');
+        return saved ? JSON.parse(saved) : getDefaultCidexList();
+      } catch(e) {
+        return getDefaultCidexList();
+      }
+    }
+    
+    function saveCidexList() {
+      // Sauvegarder localement
+      localStorage.setItem('cidexList', JSON.stringify(cidexList));
+      
+      // Synchroniser avec Firebase en mode Multi
+      if (isMultiMode && sessionRef) {
+        sessionRef.child('cidexList').set(cidexList);
+      }
+    }
+    
+    function getDefaultCidexList() {
+      return [
+        {"id":"cidex-1","name":"377 Chemin De Craponoz","lat":45.2777691,"lon":5.858391},
+        {"id":"cidex-2","name":"808 Chemin De Craponoz","lat":45.2760151,"lon":5.8611004},
+        {"id":"cidex-3","name":"Chemin Des Coralines","lat":45.2668882,"lon":5.8714565},
+        {"id":"cidex-4","name":"Chemin Du Vivier","lat":45.2661526,"lon":5.8656003},
+        {"id":"cidex-5","name":"70 Chemin Du Varvoux","lat":45.2649887,"lon":5.8629401},
+        {"id":"cidex-6","name":"36 Chemin De La Magaronne","lat":45.270003,"lon":5.861307},
+        {"id":"cidex-7","name":"488 Chemin Du Teura","lat":45.2690139,"lon":5.8750087},
+        {"id":"cidex-8","name":"219 Impasse Du Teura","lat":45.2659908,"lon":5.8774655},
+        {"id":"cidex-9","name":"163 Chemin De La Proula","lat":45.2689367,"lon":5.8678709},
+        {"id":"cidex-10","name":"827 Chemin De La Proula","lat":45.2689367,"lon":5.8678709},
+        {"id":"cidex-12","name":"Chemin Du Bas Bernin","lat":45.2686172,"lon":5.8687927},
+        {"id":"cidex-13","name":"Chemin De Bois Claret","lat":45.2451319,"lon":5.8629752},
+        {"id":"cidex-14","name":"496 Route Départementale 1090","lat":45.269439,"lon":5.8663867},
+        {"id":"cidex-15","name":"201 Route Départementale 1090","lat":45.2715298,"lon":5.8685933},
+        {"id":"cidex-16","name":"Route Départementale 1090","lat":45.2705328,"lon":5.8675322},
+        {"id":"cidex-17","name":"326 Chemin Des Communaux","lat":45.2758743,"lon":5.8605281},
+        {"id":"cidex-18","name":"149 Chemin Des Casernes","lat":45.2691454,"lon":5.8710332},
+        {"id":"cidex-19","name":"Chemin De Passe Quatre","lat":45.2658867,"lon":5.8683554},
+        {"id":"cidex-22","name":"121 Chemin Des Catieres","lat":45.265578,"lon":5.8602724},
+        {"id":"cidex-23","name":"Chemin Des Fontaines","lat":45.2656004,"lon":5.8768124},
+        {"id":"cidex-26","name":"Allée du Château","lat":45.2745762,"lon":5.8591381},
+        {"id":"cidex-28","name":"Chemin de Bachasson","lat":45.2711499,"lon":5.8625102},
+        {"id":"cidex-29","name":"Chemin de Brondiere","lat":45.2741778,"lon":5.8655803},
+        {"id":"cidex-30","name":"Chemin de Champ Jaillet","lat":45.2706881,"lon":5.8620175},
+        {"id":"cidex-31","name":"Chemin de Chanolai","lat":45.2724226,"lon":5.8571536},
+        {"id":"cidex-32","name":"Chemin de Chartreuse","lat":45.2648817,"lon":5.8620706},
+        {"id":"cidex-33","name":"Chemin de Chateau Nardent","lat":45.2666107,"lon":5.8584263},
+        {"id":"cidex-35","name":"Chemin de la Cave","lat":45.2662426,"lon":5.8670741},
+        {"id":"cidex-36","name":"Chemin de la Cote","lat":45.2638298,"lon":5.8729471},
+        {"id":"cidex-37","name":"Chemin de la Gare","lat":45.2680176,"lon":5.8669141},
+        {"id":"cidex-38","name":"Chemin de la Rousse","lat":45.2677381,"lon":5.8593826},
+        {"id":"cidex-39","name":"Chemin de la Ruine","lat":45.276102,"lon":5.8599133},
+        {"id":"cidex-40","name":"Chemin de la Veyrie","lat":45.257445,"lon":5.8612588},
+        {"id":"cidex-41","name":"Chemin de l'Etraire","lat":45.2677043,"lon":5.8646417},
+        {"id":"cidex-42","name":"Chemin des Ecoutoux","lat":45.2599403,"lon":5.8653426},
+        {"id":"cidex-43","name":"Chemin des Franques","lat":45.2644433,"lon":5.8794508},
+        {"id":"cidex-44","name":"Chemin des Marechales","lat":45.2718613,"lon":5.8710024},
+        {"id":"cidex-46","name":"Chemin des Revoleys","lat":45.2658825,"lon":5.8635171},
+        {"id":"cidex-47","name":"Chemin des Vergers","lat":45.2713744,"lon":5.8648303},
+        {"id":"cidex-48","name":"Chemin du Ballois","lat":45.2705701,"lon":5.8593383},
+        {"id":"cidex-49","name":"Chemin du Capiton","lat":45.2705076,"lon":5.8578539},
+        {"id":"cidex-50","name":"Chemin du Puits","lat":45.2686333,"lon":5.8691391},
+        {"id":"cidex-51","name":"Chemin du Varvoux","lat":45.2649887,"lon":5.8629401},
+        {"id":"cidex-52","name":"Impasse Bel Horizon","lat":45.2637896,"lon":5.8600897},
+        {"id":"cidex-53","name":"Impasse de craponoz","lat":45.2733393,"lon":5.8642773},
+        {"id":"cidex-54","name":"Impasse de la Frange Verte","lat":45.2632881,"lon":5.8584101},
+        {"id":"cidex-56","name":"Impasse de la Rousse","lat":45.2671445,"lon":5.8590869},
+        {"id":"cidex-57","name":"Impasse de La Vigneraie","lat":45.2649426,"lon":5.8615559},
+        {"id":"cidex-58","name":"Impasse de l'Eygana","lat":45.2674884,"lon":5.8701935},
+        {"id":"cidex-59","name":"Impasse de Pravouta","lat":45.2684791,"lon":5.8641399},
+        {"id":"cidex-60","name":"Impasse des Alpes","lat":45.2695764,"lon":5.8740351},
+        {"id":"cidex-61","name":"Impasse des Ecureuils","lat":45.2686054,"lon":5.8710925},
+        {"id":"cidex-62","name":"Impasse des Grandes Terres","lat":45.2689825,"lon":5.872709},
+        {"id":"cidex-63","name":"Impasse des Grands Champs","lat":45.2721994,"lon":5.862673},
+        {"id":"cidex-64","name":"Impasse des Marechales","lat":45.2718864,"lon":5.8699761},
+        {"id":"cidex-65","name":"Impasse Des Priades","lat":45.2719071,"lon":5.8647289},
+        {"id":"cidex-66","name":"Impasse des Trois Pics","lat":45.2706749,"lon":5.8716944},
+        {"id":"cidex-67","name":"Impasse des Vignes","lat":45.2688108,"lon":5.8702216},
+        {"id":"cidex-68","name":"Impasse du Ballois","lat":45.2712741,"lon":5.8587263},
+        {"id":"cidex-69","name":"Impasse du Bas Bernin","lat":45.2700334,"lon":5.869001},
+        {"id":"cidex-70","name":"Impasse du Capiton","lat":45.2698974,"lon":5.8585524},
+        {"id":"cidex-71","name":"Impasse du Ruisseau","lat":45.2733317,"lon":5.8668467}
+      ];
+    }
+    
+    // Initialiser l'application
+    function initApp() {
+      cidexList = loadCidexList();
+      initMarkers();
+    }
+    
+    function initMarkers() {
+      // Utiliser les états depuis Firebase (ou vide si pas encore chargé)
+      const etats = isMultiMode ? firebaseStates : loadEtats();
+      const customPos = loadPositions();
+      
+      cidexList.forEach(c => {
+        if (customPos[c.id]) { c.lat = customPos[c.id].lat; c.lon = customPos[c.id].lon; }
+        const etat = etats[c.id] || 'a_faire';
+        const icon = etat === 'fait' ? greenIcon : blueIcon;
+        const marker = L.marker([c.lat, c.lon], {icon: icon}).addTo(map);
+        marker.cidexId = c.id; marker.etat = etat; marker.cidexData = c;
+        markers[c.id] = marker;
+        const etatText = etat === 'fait' ? '✅ Distribué' : '⏳ À faire';
+        marker.bindPopup(`<b>${c.name}</b><br/>${etatText}<br/><small>Cliquez pour changer</small>`);
+        marker.on('click', () => handleMarkerClick(marker));
+      });
+      updateStats();
+    }
+    
+    function handleMarkerClick(marker) {
+      // Mode suppression
+      if (deletingCidex) {
+        if (confirm(`Voulez-vous vraiment supprimer le CIDEX "${marker.cidexData.name}" ?`)) {
+          // Supprimer le marqueur de la carte
+          map.removeLayer(marker);
+          
+          // Supprimer de la liste
+          cidexList = cidexList.filter(c => c.id !== marker.cidexId);
+          delete markers[marker.cidexId];
+          
+          // Sauvegarder
+          saveCidexList();
+          
+          // Supprimer l'état
+          const etats = loadEtats();
+          delete etats[marker.cidexId];
+          saveEtats(etats);
+          
+          updateStats();
+          
+          // Quitter le mode suppression
+          cancelEdit();
+        }
+        return;
+      }
+      
+      // Ne rien faire si on est en train d'ajouter un CIDEX
+      if (addingNewCidex) {
+        return;
+      }
+      
+      if (editMode) {
+        if (selectedMarker) {
+          const prevEtat = selectedMarker.etat;
+          selectedMarker.setIcon(prevEtat === 'fait' ? greenIcon : blueIcon);
+        }
+        selectedMarker = marker;
+        marker.setIcon(orangeIcon);
+        marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>📍 Sélectionné<br/><small>Cliquez sur la carte</small>`).openPopup();
+      } else {
+        const etats = loadEtats();
+        const newEtat = marker.etat === 'a_faire' ? 'fait' : 'a_faire';
+        marker.etat = newEtat;
+        marker.setIcon(newEtat === 'fait' ? greenIcon : blueIcon);
+        etats[marker.cidexId] = newEtat;
+        saveEtats(etats);
+        const etatText = newEtat === 'fait' ? '✅ Distribué' : '⏳ À faire';
+        marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>${etatText}<br/><small>Cliquez pour changer</small>`).openPopup();
+        updateStats();
+      }
+    }
+    
+    map.on('click', e => {
+      console.log('Clic sur la carte - addingNewCidex:', addingNewCidex, 'editMode:', editMode);
+      
+      if (addingNewCidex && newCidexData) {
+        console.log('Ajout du CIDEX à la position:', e.latlng);
+        const {lat, lng} = e.latlng;
+        newCidexData.lat = lat;
+        newCidexData.lon = lng;
+        cidexList.push(newCidexData);
+        saveCidexList();
+        
+        const marker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
+        marker.cidexId = newCidexData.id;
+        marker.etat = 'a_faire';
+        marker.cidexData = newCidexData;
+        markers[newCidexData.id] = marker;
+        marker.bindPopup(`<b>${newCidexData.name}</b><br/>⏳ À faire<br/><small>Cliquez pour changer</small>`);
+        marker.on('click', () => handleMarkerClick(marker));
+        
+        addingNewCidex = false;
+        newCidexData = null;
+        
+        // Fermer le bandeau
+        document.getElementById('editBanner').classList.remove('active');
+        
+        updateStats();
+        return;
+      }
+      
+      if (editMode && selectedMarker) {
+        const {lat, lng} = e.latlng;
+        
+        // Sauvegarder la position originale si ce n'est pas déjà fait
+        if (!originalPositions[selectedMarker.cidexId]) {
+          originalPositions[selectedMarker.cidexId] = {
+            lat: selectedMarker.cidexData.lat,
+            lon: selectedMarker.cidexData.lon
+          };
+        }
+        
+        // Déplacer le marqueur visuellement
+        selectedMarker.setLatLng([lat, lng]);
+        
+        // Mettre à jour les données du marqueur
+        selectedMarker.cidexData.lat = lat;
+        selectedMarker.cidexData.lon = lng;
+        
+        // Mettre à jour cidexList
+        const cidex = cidexList.find(c => c.id === selectedMarker.cidexId);
+        if (cidex) {
+          cidex.lat = lat;
+          cidex.lon = lng;
+        }
+        
+        // Remettre l'icône normale
+        const etat = selectedMarker.etat;
+        selectedMarker.setIcon(etat === 'fait' ? greenIcon : blueIcon);
+        selectedMarker = null;
+      }
+    });
+    
+    function toggleMenu() { 
+      document.getElementById('menuPanel').classList.toggle('open'); 
+    }
+    
+    function startEditMode() {
+      toggleMenu(); // Fermer le menu
+      editMode = true;
+      originalPositions = {}; // Réinitialiser les positions sauvegardées
+      const banner = document.getElementById('editBanner');
+      const bannerText = document.getElementById('editBannerText');
+      const saveBtn = document.getElementById('saveBannerBtn');
+      banner.classList.add('active');
+      saveBtn.style.display = 'block';
+      bannerText.textContent = '📍 MODE ÉDITION - Cliquez sur un marqueur puis sur la carte pour le déplacer';
+    }
+    
+    function startDeleteMode() {
+      toggleMenu(); // Fermer le menu
+      deletingCidex = true;
+      const banner = document.getElementById('editBanner');
+      const bannerText = document.getElementById('editBannerText');
+      const saveBtn = document.getElementById('saveBannerBtn');
+      banner.classList.add('active');
+      saveBtn.style.display = 'none'; // Pas de sauvegarde en mode suppression
+      bannerText.textContent = '🗑️ MODE SUPPRESSION - Cliquez sur un marqueur pour le supprimer';
+    }
+    
+    function cancelEdit() {
+      // Restaurer les positions originales si on annule
+      if (editMode && Object.keys(originalPositions).length > 0) {
+        Object.keys(originalPositions).forEach(cidexId => {
+          const marker = markers[cidexId];
+          const originalPos = originalPositions[cidexId];
+          if (marker && originalPos) {
+            marker.setLatLng([originalPos.lat, originalPos.lon]);
+            marker.cidexData.lat = originalPos.lat;
+            marker.cidexData.lon = originalPos.lon;
+            
+            // Mettre à jour cidexList aussi
+            const cidex = cidexList.find(c => c.id === cidexId);
+            if (cidex) {
+              cidex.lat = originalPos.lat;
+              cidex.lon = originalPos.lon;
+            }
+          }
+        });
+      }
+      
+      editMode = false;
+      addingNewCidex = false;
+      deletingCidex = false;
+      newCidexData = null;
+      originalPositions = {};
+      const banner = document.getElementById('editBanner');
+      banner.classList.remove('active');
+      if (selectedMarker) {
+        const etat = selectedMarker.etat;
+        selectedMarker.setIcon(etat === 'fait' ? greenIcon : blueIcon);
+        selectedMarker = null;
+      }
+    }
+    
+    function startAddCidex() {
+      toggleMenu(); // Fermer le menu
+      document.getElementById('addCidexModal').classList.add('active');
+      document.getElementById('cidexName').value = '';
+      document.getElementById('cidexAddress').value = '';
+    }
+    
+    function openAddModal() {
+      document.getElementById('addCidexModal').classList.add('active');
+      document.getElementById('cidexName').value = '';
+      document.getElementById('cidexAddress').value = '';
+    }
+    
+    function closeAddModal() {
+      document.getElementById('addCidexModal').classList.remove('active');
+      addingNewCidex = false;
+      newCidexData = null;
+    }
+    
+    function addNewCidex() {
+      const name = document.getElementById('cidexName').value.trim();
+      const address = document.getElementById('cidexAddress').value.trim();
+      
+      if (!name) {
+        alert('⚠️ Veuillez entrer un nom pour le CIDEX');
+        return;
+      }
+      
+      const newId = 'cidex-' + Date.now();
+      newCidexData = {
+        id: newId,
+        name: name,
+        adresse: address || name,
+        lat: 45.2714,
+        lon: 5.8652
+      };
+      
+      // Fermer le modal sans réinitialiser les variables
+      document.getElementById('addCidexModal').classList.remove('active');
+      addingNewCidex = true;
+      
+      console.log('Mode ajout activé:', addingNewCidex, newCidexData);
+      
+      // Afficher le bandeau d'édition
+      const banner = document.getElementById('editBanner');
+      const bannerText = document.getElementById('editBannerText');
+      const saveBtn = document.getElementById('saveBannerBtn');
+      banner.classList.add('active');
+      saveBtn.style.display = 'none'; // Pas de sauvegarde en mode ajout (automatique)
+      bannerText.textContent = '📍 AJOUT DE CIDEX - Cliquez sur la carte pour positionner le nouveau CIDEX';
+    }
+    
+    function updateStats() {
+      const total = cidexList.length;
+      // Compter directement depuis les marqueurs (fonctionne en Solo et Multi)
+      let done = 0;
+      Object.values(markers).forEach(marker => {
+        if (marker.etat === 'fait') done++;
+      });
+      const remaining = total - done;
+      const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById('totalCidex').textContent = total;
+      document.getElementById('doneCount').textContent = done;
+      document.getElementById('remainingCount').textContent = remaining;
+      document.getElementById('progressPercent').textContent = percent + '%';
+      document.getElementById('progressBar').style.width = percent + '%';
+    }
+    
+    function resetAll() {
+      if (confirm('⚠️ Réinitialiser tous les états de distribution ?')) {
+        if (isMultiMode && sessionRef) {
+          sessionRef.child('etats').remove();
+        } else {
+          localStorage.removeItem('cidexEtats');
+        }
+        location.reload();
+      }
+    }
+    
+    function savePositions() {
+      // Sauvegarder les nouvelles positions dans localStorage
+      const positions = {};
+      Object.keys(originalPositions).forEach(cidexId => {
+        const marker = markers[cidexId];
+        if (marker) {
+          positions[cidexId] = {
+            lat: marker.cidexData.lat,
+            lon: marker.cidexData.lon
+          };
+        }
+      });
+      
+      // Sauvegarder dans localStorage
+      const allPositions = loadPositions();
+      Object.assign(allPositions, positions);
+      savePositionsToStorage(allPositions);
+      
+      // Sauvegarder la liste complète (synchronise avec Firebase si mode Multi)
+      saveCidexList();
+      
+      // Réinitialiser et fermer le mode édition
+      originalPositions = {};
+      editMode = false;
+      document.getElementById('editBanner').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

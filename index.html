@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Distribution CIDEX - Bernin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 50px;
+    }
+    .header h1 {
+      font-size: 42px;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+    .header p {
+      font-size: 18px;
+      opacity: 0.95;
+    }
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .mode-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .mode-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    }
+    .mode-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    .mode-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+    .mode-description {
+      font-size: 16px;
+      color: #6b7c93;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .mode-features {
+      text-align: left;
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 2px solid #e8ecf1;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      margin: 12px 0;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+    .feature-icon {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+    .mode-card.solo:hover {
+      background: linear-gradient(135deg, #f8f9fb 0%, #e8f4fd 100%);
+    }
+    .mode-card.multi:hover {
+      background: linear-gradient(135deg, #f8f9fb 0%, #e8f4fd 100%);
+    }
+    .footer {
+      text-align: center;
+      color: white;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .header h1 { font-size: 32px; }
+      .header p { font-size: 16px; }
+      .mode-cards { grid-template-columns: 1fr; }
+      .mode-card { padding: 30px 20px; }
+      .mode-title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗺️ Distribution CIDEX</h1>
+      <p>Bernin - Application de distribution collaborative</p>
+    </div>
+    
+    <div class="mode-cards">
+      <a href="app.html" class="mode-card solo" style="grid-column: 1 / -1; max-width: 600px; margin: 0 auto;">
+        <div class="mode-icon">🗺️</div>
+        <div class="mode-title">Lancer l'Application</div>
+        <div class="mode-description">
+          Application collaborative avec synchronisation temps réel pour distribuer vos flyers efficacement, seul ou en équipe.
+        </div>
+        <div class="mode-features">
+          <div class="feature">
+            <span class="feature-icon">☁️</span>
+            <span>Synchronisation cloud automatique</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">👥</span>
+            <span>Collaboration en temps réel</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📍</span>
+            <span>62 CIDEX géolocalisés</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">➕</span>
+            <span>Ajouter des CIDEX manquants</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🔄</span>
+            <span>Déplacer et supprimer des CIDEX</span>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📊</span>
+            <span>Statistiques et progression</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="footer">
+      <p>💡 Besoin d'aide ? Consultez le <a href="README.md">guide d'utilisation</a></p>
+    </div>
+  </div>
+</body>
+</html>
