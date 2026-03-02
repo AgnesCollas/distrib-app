@@ -20,7 +20,7 @@ Application web collaborative pour gérer la distribution de flyers dans les CID
 - 🔄 Synchronisation des CIDEX (ajout, déplacement, suppression)
 
 ### Gestion des CIDEX 📍
-- 📍 149 CIDEX géolocalisés sur la carte
+- 📍 CIDEX géolocalisés sur la carte
 - ➕ Ajout de CIDEX manquants
 - 🔄 Déplacement de CIDEX
 - 🗑️ Suppression de CIDEX
