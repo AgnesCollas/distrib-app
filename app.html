@@ -673,9 +673,7 @@
           marker.etat = etat;
           const icon = getIconForState(etat);
           marker.setIcon(icon);
-          const etatText = getStateText(etat);
-          const bal = marker.cidexData.bal || 0;
-          marker.setPopupContent('<b>' + marker.cidexData.name + '</b><br/>' + etatText + '<br/><small>BAL: ' + bal + '</small><br/><small>Clic droit pour éditer</small>');
+          marker.setPopupContent(createPopupContent(marker.cidexData, etat));
         });
         updateStats();
       });
@@ -932,9 +930,7 @@
         const marker = L.marker([c.lat, c.lon], {icon: icon}).addTo(map);
         marker.cidexId = c.id; marker.etat = etat; marker.cidexData = c;
         markers[c.id] = marker;
-        const etatText = getStateText(etat);
-        const bal = c.bal || 0;
-        marker.bindPopup(`<b>${c.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
+        marker.bindPopup(createPopupContent(c, etat));
         marker.on('click', () => handleMarkerClick(marker));
         marker.on('contextmenu', () => openEditModal(marker.cidexId));
       });
@@ -990,9 +986,7 @@
         marker.setIcon(getIconForState(newEtat));
         etats[marker.cidexId] = newEtat;
         saveEtats(etats);
-        const etatText = getStateText(newEtat);
-        const bal = marker.cidexData.bal || 0;
-        marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`).openPopup();
+        marker.setPopupContent(createPopupContent(marker.cidexData, newEtat)).openPopup();
         updateStats();
       }
     }
@@ -1013,11 +1007,9 @@
         marker.etat = 'a_faire';
         marker.cidexData = newCidexData;
         markers[newCidexData.id] = marker;
-        const bal = newCidexData.bal || 0;
-        marker.bindPopup(`<b>${newCidexData.name}</b><br/>⏳ À faire<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
+        marker.bindPopup(createPopupContent(newCidexData, 'a_faire'));
         marker.on('click', () => handleMarkerClick(marker));
         marker.on('contextmenu', () => openEditModal(marker.cidexId));
-        marker.on('click', () => handleMarkerClick(marker));
         
         addingNewCidex = false;
         newCidexData = null;
@@ -1141,6 +1133,17 @@
       }
     }
     
+    function createPopupContent(cidex, etat) {
+      const etatText = getStateText(etat);
+      const bal = cidex.bal || 0;
+      return `<div style="min-width: 200px;">
+        <b>${cidex.name}</b><br/>
+        ${etatText}<br/>
+        <small>BAL: ${bal}</small><br/>
+        <button onclick="openEditModal('${cidex.id}')" style="margin-top: 8px; padding: 6px 12px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">✏️ Éditer</button>
+      </div>`;
+    }
+    
     function startAddCidex() {
       toggleMenu(); // Fermer le menu
       document.getElementById('addCidexModal').classList.add('active');
@@ -1200,8 +1203,7 @@
         if (marker) {
           marker.cidexData = cidex;
           const etat = marker.etat || 'a_faire';
-          const etatText = getStateText(etat);
-          marker.setPopupContent(`<b>${cidex.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
+          marker.setPopupContent(createPopupContent(cidex, etat));
         }
         
         // Sauvegarder
