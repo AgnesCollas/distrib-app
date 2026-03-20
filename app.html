@@ -570,11 +570,11 @@
             if (!userLocationMarker) {
               userLocationMarker = L.circleMarker([lat, lon], {
                 radius: 8,
-                fillColor: '#4a90e2',
-                color: '#2c5aa0',
+                fillColor: '#1a3a52',
+                color: '#0d1f2d',
                 weight: 2,
                 opacity: 1,
-                fillOpacity: 0.8
+                fillOpacity: 0.9
               }).addTo(map);
               userLocationMarker.bindPopup('📍 Votre position');
             } else {
@@ -585,10 +585,10 @@
             if (!userLocationCircle) {
               userLocationCircle = L.circle([lat, lon], {
                 radius: accuracy,
-                color: '#4a90e2',
+                color: '#1a3a52',
                 weight: 1,
                 opacity: 0.3,
-                fillColor: '#4a90e2',
+                fillColor: '#1a3a52',
                 fillOpacity: 0.1
               }).addTo(map);
             } else {
