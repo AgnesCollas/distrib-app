@@ -527,6 +527,13 @@
       attribution: '© OpenStreetMap', maxZoom: 19
     }).addTo(map);
     
+    // Ajouter l'échelle
+    L.control.scale({
+      metric: true,
+      imperial: false,
+      position: 'bottomleft'
+    }).addTo(map);
+    
     // Icônes
     const blueIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
