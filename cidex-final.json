@@ -1041,5 +1041,117 @@
     "lat": 45.27770543536564,
     "lon": 5.858577489852906,
     "name": "Cidex ?"
+  },
+  {
+    "adresse": "Impasse de craponoz",
+    "id": "cidex-1772707796941",
+    "lat": 45.27336132699241,
+    "lon": 5.864210128784181,
+    "name": "Impasse de craponoz"
+  },
+  {
+    "adresse": "Champs jaillet",
+    "id": "cidex-1772720668603",
+    "lat": 45.27144355617679,
+    "lon": 5.862107276916505,
+    "name": "Les grands champs"
+  },
+  {
+    "adresse": "Les grands champs",
+    "id": "cidex-1772720694332",
+    "lat": 45.27218349117745,
+    "lon": 5.862085819244386,
+    "name": "Les grands champs"
+  },
+  {
+    "adresse": "71",
+    "id": "cidex-1772721640105",
+    "lat": 45.26962387907197,
+    "lon": 5.861527919769288,
+    "name": "Boîte individuelle"
+  },
+  {
+    "adresse": "97",
+    "id": "cidex-1772721723763",
+    "lat": 45.2694728659022,
+    "lon": 5.861202478627093,
+    "name": "Boîte individuelle"
+  },
+  {
+    "adresse": "113,114,115,116 le prelevan",
+    "id": "cidex-1772721938235",
+    "lat": 45.26955718156139,
+    "lon": 5.860714316340819,
+    "name": "4 boîtes individuelles"
+  },
+  {
+    "adresse": "157, 161,166",
+    "id": "cidex-1772722099567",
+    "lat": 45.269854173382306,
+    "lon": 5.860106348991395,
+    "name": "3 boîtes  individuelles"
+  },
+  {
+    "adresse": "111",
+    "id": "cidex-1772722541147",
+    "lat": 45.27038145570488,
+    "lon": 5.858380794416008,
+    "name": "Boîte individuelle"
+  },
+  {
+    "adresse": "269",
+    "id": "cidex-1772727548237",
+    "lat": 45.27149011692014,
+    "lon": 5.865899920463562,
+    "name": "Individuelle"
+  },
+  {
+    "adresse": "Immeuble",
+    "id": "cidex-1772731526692",
+    "lat": 45.27129695222537,
+    "lon": 5.8670327066829495,
+    "name": "Immeuble"
+  },
+  {
+    "adresse": "Immeuble",
+    "id": "cidex-1772731537163",
+    "lat": 45.27145551094721,
+    "lon": 5.866745710318356,
+    "name": "Immeuble"
+  },
+  {
+    "adresse": "Immeuble",
+    "id": "cidex-1772731557193",
+    "lat": 45.27153982377632,
+    "lon": 5.867286622524262,
+    "name": "Immeuble"
+  },
+  {
+    "adresse": "Immeuble",
+    "id": "cidex-1772731574634",
+    "lat": 45.270730038289926,
+    "lon": 5.866522192955018,
+    "name": "Immeuble"
+  },
+  {
+    "adresse": "3 bal",
+    "id": "cidex-1773383287471",
+    "lat": 45.266317878956436,
+    "lon": 5.858051776885987,
+    "name": "3 bal"
+  },
+  {
+    "adresse": "bal isolée",
+    "id": "cidex-1773384172500",
+    "lat": 45.266809188396756,
+    "lon": 5.860283374786378,
+    "name": "bal isolée"
+  },
+  {
+    "adresse": "8 bal isolées",
+    "id": "cidex-1773386525247",
+    "lat": 45.269459715511175,
+    "lon": 5.860637426376344,
+    "name": "8 bal isolées"
   }
 ]
