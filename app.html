@@ -483,6 +483,7 @@
   <div class="menu-panel" id="menuPanel">
     <div class="menu-content">
       <button class="btn-anthracite" onclick="startAddCidex()">➕ Ajouter un CIDEX</button>
+      <button class="btn-anthracite" onclick="startEditCidexMode()">✏️ Éditer un CIDEX</button>
       <button class="btn-anthracite" onclick="startEditMode()">📍 Déplacer un CIDEX</button>
       <button class="btn-anthracite" onclick="startDeleteMode()">🗑️ Supprimer un CIDEX</button>
       <button class="btn-anthracite" onclick="resetAll()">🔄 Tout réinitialiser</button>
@@ -498,6 +499,7 @@
     let addingNewCidex = false, newCidexData = null;
     let deletingCidex = false;
     let editingCidex = false, editingCidexId = null;
+    let editingCidexMode = false;
     let isMultiMode = false, sessionCode = null, userName = null;
     let database = null, sessionRef = null;
     let originalPositions = {}; // Pour sauvegarder les positions avant édition
@@ -938,6 +940,12 @@
     }
     
     function handleMarkerClick(marker) {
+      // Mode édition CIDEX
+      if (editingCidexMode) {
+        openEditModal(marker.cidexId);
+        return;
+      }
+      
       // Mode suppression
       if (deletingCidex) {
         if (confirm(`Voulez-vous vraiment supprimer le CIDEX "${marker.cidexData.name}" ?`)) {
@@ -1069,6 +1077,17 @@
       bannerText.textContent = '📍 MODE ÉDITION - Cliquez sur un marqueur puis sur la carte pour le déplacer';
     }
     
+    function startEditCidexMode() {
+      toggleMenu(); // Fermer le menu
+      editingCidexMode = true;
+      const banner = document.getElementById('editBanner');
+      const bannerText = document.getElementById('editBannerText');
+      const saveBtn = document.getElementById('saveBannerBtn');
+      banner.classList.add('active');
+      saveBtn.style.display = 'none';
+      bannerText.textContent = '✏️ MODE ÉDITION - Cliquez sur un CIDEX pour le modifier';
+    }
+    
     function startDeleteMode() {
       toggleMenu(); // Fermer le menu
       deletingCidex = true;
@@ -1102,6 +1121,7 @@
       }
       
       editMode = false;
+      editingCidexMode = false;
       addingNewCidex = false;
       deletingCidex = false;
       newCidexData = null;
@@ -1178,6 +1198,11 @@
     function closeEditModal() {
       document.getElementById('editCidexModal').classList.remove('active');
       editingCidexId = null;
+      
+      // Si on était en mode édition CIDEX, quitter ce mode
+      if (editingCidexMode) {
+        cancelEdit();
+      }
     }
     
     function saveEditCidex() {
