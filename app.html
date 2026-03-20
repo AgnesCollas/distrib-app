@@ -410,12 +410,27 @@
       <h2>➕ Ajouter un CIDEX</h2>
       <input type="text" id="cidexName" placeholder="Nom du CIDEX (ex: Chemin des Roses)" />
       <input type="text" id="cidexAddress" placeholder="Adresse complète" />
+      <input type="number" id="cidexBAL" placeholder="Nombre de BAL" min="0" />
       <div class="info-box">
         💡 Après avoir ajouté le CIDEX, cliquez sur la carte pour le positionner
       </div>
       <div class="modal-buttons">
         <button class="btn-secondary" onclick="closeAddModal()">Annuler</button>
         <button class="btn-primary" onclick="addNewCidex()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal pour éditer un CIDEX -->
+  <div class="modal" id="editCidexModal">
+    <div class="modal-content">
+      <h2>✏️ Éditer le CIDEX</h2>
+      <input type="text" id="editCidexName" placeholder="Nom du CIDEX" />
+      <input type="text" id="editCidexAddress" placeholder="Adresse complète" />
+      <input type="number" id="editCidexBAL" placeholder="Nombre de BAL" min="0" />
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
+        <button class="btn-primary" onclick="saveEditCidex()">Sauvegarder</button>
       </div>
     </div>
   </div>
@@ -482,6 +497,7 @@
     let editMode = false, selectedMarker = null, cidexList = [], markers = {};
     let addingNewCidex = false, newCidexData = null;
     let deletingCidex = false;
+    let editingCidex = false, editingCidexId = null;
     let isMultiMode = false, sessionCode = null, userName = null;
     let database = null, sessionRef = null;
     let originalPositions = {}; // Pour sauvegarder les positions avant édition
@@ -521,6 +537,11 @@
     });
     const orangeIcon = L.icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const purpleIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
       iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
     });
@@ -589,7 +610,7 @@
             Object.keys(data.etats).forEach(function(cidexId) {
               if (markers[cidexId]) {
                 markers[cidexId].etat = data.etats[cidexId];
-                const icon = data.etats[cidexId] === 'fait' ? greenIcon : blueIcon;
+                const icon = getIconForState(data.etats[cidexId]);
                 markers[cidexId].setIcon(icon);
               }
             });
@@ -650,10 +671,11 @@
           const marker = markers[cidexId];
           const etat = etats[cidexId] || 'a_faire';
           marker.etat = etat;
-          const icon = etat === 'fait' ? greenIcon : blueIcon;
+          const icon = getIconForState(etat);
           marker.setIcon(icon);
-          const etatText = etat === 'fait' ? '✅ Distribué' : '⏳ À faire';
-          marker.setPopupContent('<b>' + marker.cidexData.name + '</b><br/>' + etatText + '<br/><small>Cliquez pour changer</small>');
+          const etatText = getStateText(etat);
+          const bal = marker.cidexData.bal || 0;
+          marker.setPopupContent('<b>' + marker.cidexData.name + '</b><br/>' + etatText + '<br/><small>BAL: ' + bal + '</small><br/><small>Clic droit pour éditer</small>');
         });
         updateStats();
       });
@@ -906,13 +928,15 @@
       cidexList.forEach(c => {
         if (customPos[c.id]) { c.lat = customPos[c.id].lat; c.lon = customPos[c.id].lon; }
         const etat = etats[c.id] || 'a_faire';
-        const icon = etat === 'fait' ? greenIcon : blueIcon;
+        const icon = getIconForState(etat);
         const marker = L.marker([c.lat, c.lon], {icon: icon}).addTo(map);
         marker.cidexId = c.id; marker.etat = etat; marker.cidexData = c;
         markers[c.id] = marker;
-        const etatText = etat === 'fait' ? '✅ Distribué' : '⏳ À faire';
-        marker.bindPopup(`<b>${c.name}</b><br/>${etatText}<br/><small>Cliquez pour changer</small>`);
+        const etatText = getStateText(etat);
+        const bal = c.bal || 0;
+        marker.bindPopup(`<b>${c.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
         marker.on('click', () => handleMarkerClick(marker));
+        marker.on('contextmenu', () => openEditModal(marker.cidexId));
       });
       updateStats();
     }
@@ -952,20 +976,23 @@
       if (editMode) {
         if (selectedMarker) {
           const prevEtat = selectedMarker.etat;
-          selectedMarker.setIcon(prevEtat === 'fait' ? greenIcon : blueIcon);
+          selectedMarker.setIcon(getIconForState(prevEtat));
         }
         selectedMarker = marker;
         marker.setIcon(orangeIcon);
         marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>📍 Sélectionné<br/><small>Cliquez sur la carte</small>`).openPopup();
       } else {
         const etats = loadEtats();
-        const newEtat = marker.etat === 'a_faire' ? 'fait' : 'a_faire';
+        const states = ['a_faire', 'planifie', 'fait'];
+        const currentIndex = states.indexOf(marker.etat || 'a_faire');
+        const newEtat = states[(currentIndex + 1) % states.length];
         marker.etat = newEtat;
-        marker.setIcon(newEtat === 'fait' ? greenIcon : blueIcon);
+        marker.setIcon(getIconForState(newEtat));
         etats[marker.cidexId] = newEtat;
         saveEtats(etats);
-        const etatText = newEtat === 'fait' ? '✅ Distribué' : '⏳ À faire';
-        marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>${etatText}<br/><small>Cliquez pour changer</small>`).openPopup();
+        const etatText = getStateText(newEtat);
+        const bal = marker.cidexData.bal || 0;
+        marker.setPopupContent(`<b>${marker.cidexData.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`).openPopup();
         updateStats();
       }
     }
@@ -981,12 +1008,15 @@
         cidexList.push(newCidexData);
         saveCidexList();
         
-        const marker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
+        const marker = L.marker([lat, lng], {icon: getIconForState('a_faire')}).addTo(map);
         marker.cidexId = newCidexData.id;
         marker.etat = 'a_faire';
         marker.cidexData = newCidexData;
         markers[newCidexData.id] = marker;
-        marker.bindPopup(`<b>${newCidexData.name}</b><br/>⏳ À faire<br/><small>Cliquez pour changer</small>`);
+        const bal = newCidexData.bal || 0;
+        marker.bindPopup(`<b>${newCidexData.name}</b><br/>⏳ À faire<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
+        marker.on('click', () => handleMarkerClick(marker));
+        marker.on('contextmenu', () => openEditModal(marker.cidexId));
         marker.on('click', () => handleMarkerClick(marker));
         
         addingNewCidex = false;
@@ -1026,7 +1056,7 @@
         
         // Remettre l'icône normale
         const etat = selectedMarker.etat;
-        selectedMarker.setIcon(etat === 'fait' ? greenIcon : blueIcon);
+        selectedMarker.setIcon(getIconForState(etat));
         selectedMarker = null;
       }
     });
@@ -1088,8 +1118,26 @@
       banner.classList.remove('active');
       if (selectedMarker) {
         const etat = selectedMarker.etat;
-        selectedMarker.setIcon(etat === 'fait' ? greenIcon : blueIcon);
+        selectedMarker.setIcon(getIconForState(etat));
         selectedMarker = null;
+      }
+    }
+    
+    function getIconForState(etat) {
+      switch(etat) {
+        case 'fait': return greenIcon;
+        case 'planifie': return purpleIcon;
+        case 'a_faire':
+        default: return blueIcon;
+      }
+    }
+    
+    function getStateText(etat) {
+      switch(etat) {
+        case 'fait': return '✅ Distribué';
+        case 'planifie': return '📋 Planifié';
+        case 'a_faire':
+        default: return '⏳ À faire';
       }
     }
     
@@ -1098,6 +1146,7 @@
       document.getElementById('addCidexModal').classList.add('active');
       document.getElementById('cidexName').value = '';
       document.getElementById('cidexAddress').value = '';
+      document.getElementById('cidexBAL').value = '';
     }
     
     function openAddModal() {
@@ -1112,9 +1161,60 @@
       newCidexData = null;
     }
     
+    function openEditModal(cidexId) {
+      const cidex = cidexList.find(c => c.id === cidexId);
+      if (!cidex) return;
+      
+      editingCidexId = cidexId;
+      document.getElementById('editCidexName').value = cidex.name;
+      document.getElementById('editCidexAddress').value = cidex.adresse || '';
+      document.getElementById('editCidexBAL').value = cidex.bal || 0;
+      document.getElementById('editCidexModal').classList.add('active');
+    }
+    
+    function closeEditModal() {
+      document.getElementById('editCidexModal').classList.remove('active');
+      editingCidexId = null;
+    }
+    
+    function saveEditCidex() {
+      if (!editingCidexId) return;
+      
+      const name = document.getElementById('editCidexName').value.trim();
+      const address = document.getElementById('editCidexAddress').value.trim();
+      const bal = parseInt(document.getElementById('editCidexBAL').value) || 0;
+      
+      if (!name) {
+        alert('⚠️ Veuillez entrer un nom pour le CIDEX');
+        return;
+      }
+      
+      const cidex = cidexList.find(c => c.id === editingCidexId);
+      if (cidex) {
+        cidex.name = name;
+        cidex.adresse = address || name;
+        cidex.bal = bal;
+        
+        // Mettre à jour le marqueur
+        const marker = markers[editingCidexId];
+        if (marker) {
+          marker.cidexData = cidex;
+          const etat = marker.etat || 'a_faire';
+          const etatText = getStateText(etat);
+          marker.setPopupContent(`<b>${cidex.name}</b><br/>${etatText}<br/><small>BAL: ${bal}</small><br/><small>Clic droit pour éditer</small>`);
+        }
+        
+        // Sauvegarder
+        saveCidexList();
+      }
+      
+      closeEditModal();
+    }
+    
     function addNewCidex() {
       const name = document.getElementById('cidexName').value.trim();
       const address = document.getElementById('cidexAddress').value.trim();
+      const bal = parseInt(document.getElementById('cidexBAL').value) || 0;
       
       if (!name) {
         alert('⚠️ Veuillez entrer un nom pour le CIDEX');
@@ -1126,6 +1226,7 @@
         id: newId,
         name: name,
         adresse: address || name,
+        bal: bal,
         lat: 45.2714,
         lon: 5.8652
       };
